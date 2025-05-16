@@ -29,6 +29,13 @@ DECIMAL       HEXADECIMAL     DESCRIPTION
 - For the root, it didn't work. I used rockyou.txt which also failed. So I tried to make a custom wordlist using some tools called crunch but it didn't as per my thought. So I am searching for some another ways to crack the password.
 
 ---
+> Legacy network services listening upon start up
+
+- This one is basically using nmap to search for open port in the router's ip.
+
+- I got multiple services, for example:- http server , ssh and also telnetd which asks credentials when connected through nc.
+
+---
 
 > Persistent backdoor daemon configured to run during start up
 
@@ -52,5 +59,17 @@ DECIMAL       HEXADECIMAL     DESCRIPTION
 
 > Insufficient Privacy Protection
 
-- 		
+- I found out many leaked data using firmwalker which is a automated script to find the binarys, db files and more.
+
+- It showed me many db files and keys for multiple apps. One db was in */usr/lib/lua/luci/controller/iotgoat/sensordata.db* which had email and their birthday dates.
+
+---
+
+> Lack of Device Management
+
+- In the web application, only the kernal logs are avaiable in system. the Openwrt logs are not enabled.
+
+---
+
+		
 
