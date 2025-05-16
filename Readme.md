@@ -4,8 +4,8 @@ You can download the firmware from the official OWASP release:
 
 🔗 [Download IoTGoat Firmware (v1.0)](https://github.com/OWASP/IoTGoat/releases/download/v1.0/IoTGoat-x86.img.gz)
 
-1. After downloading the firmware , **extract** the `.img` file . 
-2. Then use **binwalk** to view/extract the file system embedded in the firmware.
+- After downloading the firmware , **extract** the `.img` file . 
+- Then use **binwalk** to view/extract the file system embedded in the firmware.
 
 ```
 $ binwalk IoTGoat-x86.img
@@ -16,21 +16,41 @@ DECIMAL       HEXADECIMAL     DESCRIPTION
 5325930       0x51446A        xz compressed data
 17301504      0x1080000       Squashfs filesystem, little endian, version 4.0, compression:xz, size: 3481630 bytes, 1352 inodes, blocksize: 262144 bytes
 ```
-3. Here **Squashfs Filesystem** is the type of compressed file system , used for read-only file-system. This is where the linux files are been held.
+- Here **Squashfs Filesystem** is the type of compressed file system , used for read-only file-system. This is where the linux files are been held.
+
+---
 
 > Hardcoded Password
 
-4. Then you find some hardcoded passwds in /etc/shadow of the squashfs-root. This passwds can be cracked using some tools called `John The Ripper` and `HashCat`.
+- Then you find some hardcoded passwds in /etc/shadow of the squashfs-root. This passwds can be cracked using some tools called `John The Ripper` and `HashCat`.
 
-5. I used some commonly used wordlist called mirabot-net. And cracked the passwd for **iotgoatuser**.
+- I used some commonly used wordlist called mirabot-net. And cracked the passwd for **iotgoatuser**.
 
-6. For the root, it didn't work. I used rockyou.txt which also failed. So I tried to make a custom wordlist using some tools called crunch but it didn't as per my thought. So I am searching for some another ways to crack the password.
+- For the root, it didn't work. I used rockyou.txt which also failed. So I tried to make a custom wordlist using some tools called crunch but it didn't as per my thought. So I am searching for some another ways to crack the password.
+
+---
 
 > Persistent backdoor daemon configured to run during start up
 
-7. I found the backdoor when scanned the ip for open ports.I used nmap to scan for open ports. Some open ports were http,https which shows it is running some web.
+- I found the backdoor when scanned the ip for open ports.I used nmap to scan for open ports. Some open ports were http,https which shows it is running some web.
 
-8. I used used a GUI tool of namp called zenmap in kali linux which hand in-built nmap option where i choose to scan all tcp port. This scan resulted in showing a tcp as backdoor.
+- I used used a GUI tool of namp called zenmap in kali linux which hand in-built nmap option where i choose to scan all tcp port. This scan resulted in showing a tcp as backdoor.
 
-9. When I tried to connect to it through nc, i got the access as root. I also tried to create a file which was successful.
+- When I tried to connect to it through nc, i got the access as root. I also tried to create a file which was successful.
+
+---
+
+> A "secret" developer diagnostics page not directly accessible and exposes shell access to users
+
+- When you look at the url of the web page , you can see the path of the file (i.e) */www/cgi-bin/luci* which is like a entry-point. By examining it and got to found out that it the code just gets and information and instruction from */usr/lib/lua/luci* (backend).
+
+- Then I checked the controller directory and discovered the IoTGoat backend code for the camera and door modules, as well as a hidden command injection endpoint — **a secret developer diagnostics page**.
+
+- Also it had a command to send through url (i.e) webcmd. I can send cmd through it for example, webcmd?cmd=ls will return me the output.
+
+---
+
+> Insufficient Privacy Protection
+
+- 		
 
