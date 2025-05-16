@@ -77,7 +77,7 @@ DECIMAL       HEXADECIMAL     DESCRIPTION
 
 - So to exploit this **CVE-2020-7982** , we need the patch our own binary with a packages(download from [https://download.openwrt.org](https://download.openwrt.org)).
 
-- We can find the architecture of the file which the opkg download from the server using **opkg print-architecture**.
+- We can find the architecture of the file which the opkg download from the server using `opkg print-architecture`.
 
 - After finding the architecture, we can write a script to host a server to mimic the server from which opkg fetch the files and checks its intergity(actually it fails here).
 
